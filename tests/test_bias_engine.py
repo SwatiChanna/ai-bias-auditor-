@@ -34,6 +34,17 @@ def test_calculate_statistical_parity_difference_with_string_labels():
     assert bias_engine.calculate_statistical_parity_difference(df, "protected", "label") == 0.0
 
 
+def test_calculate_disparate_impact_multiclass_protected_group():
+    df = pd.DataFrame(
+        {
+            "protected": ["A", "A", "A", "B", "B", "C"],
+            "label": [1, 0, 1, 0, 1, 1],
+        }
+    )
+    # Most frequent group 'A' becomes privileged; others are grouped as unprivileged.
+    assert bias_engine.calculate_disparate_impact(df, "protected", "label") == pytest.approx(1.0, rel=1e-6)
+
+
 @pytest.mark.parametrize(
     "dataset_type, expected_columns",
     [

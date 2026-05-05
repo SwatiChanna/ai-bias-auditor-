@@ -133,6 +133,10 @@ def _generate_recommendations() -> List[str]:
     ]
 
 
+def _sanitize_pdf_text(text: str) -> str:
+    return str(text).encode("latin-1", errors="replace").decode("latin-1")
+
+
 def _create_report(scores: Dict[str, float], explanation: str, recommendations: List[str]) -> bytes:
     """Create a PDF report for download.
 
@@ -147,17 +151,17 @@ def _create_report(scores: Dict[str, float], explanation: str, recommendations: 
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="AI Bias & Fairness Auditor Report", ln=True, align="C")
+    pdf.cell(200, 10, txt=_sanitize_pdf_text("AI Bias & Fairness Auditor Report"), ln=True, align="C")
     pdf.ln(10)
-    pdf.cell(200, 10, txt=f"Disparate Impact: {scores['disparate_impact']:.2f}", ln=True)
-    pdf.cell(200, 10, txt=f"Statistical Parity Difference: {scores['statistical_parity']:.2f}", ln=True)
+    pdf.cell(200, 10, txt=_sanitize_pdf_text(f"Disparate Impact: {scores['disparate_impact']:.2f}"), ln=True)
+    pdf.cell(200, 10, txt=_sanitize_pdf_text(f"Statistical Parity Difference: {scores['statistical_parity']:.2f}"), ln=True)
     pdf.ln(10)
-    pdf.multi_cell(0, 10, txt=f"Explanation: {explanation}")
+    pdf.multi_cell(0, 10, txt=_sanitize_pdf_text(f"Explanation: {explanation}"))
     pdf.ln(10)
-    pdf.cell(200, 10, txt="Recommendations:", ln=True)
+    pdf.cell(200, 10, txt=_sanitize_pdf_text("Recommendations:"), ln=True)
     for rec in recommendations:
-        pdf.cell(200, 10, txt=f"- {rec}", ln=True)
-    return pdf.output(dest="S").encode("latin1")
+        pdf.cell(200, 10, txt=_sanitize_pdf_text(f"- {rec}"), ln=True)
+    return pdf.output(dest="S").encode("latin-1", errors="replace")
 
 
 def main() -> None:
@@ -188,17 +192,48 @@ def main() -> None:
     st.sidebar.header("📁 Step 1: Select Case Study")
     demo_options = {
         "None": None,
-        "🏦 Indian Loan Audit (Caste/Caste-Sensitive)": "data/demo_indicasa.csv",
-        "📍 Regional Hiring Bias (Tier-2/3 Cities)": "data/demo_regional.csv",
-        "🗣️ Language Bias (Hinglish/Vernacular)": "data/demo_language.csv",
-        "⚖️ Global Gender Income Gap": "data/demo_adult.csv"
+        "🏦 Indian Loan Audit (Caste/Caste-Sensitive)": {
+            "path": "data/demo_indicasa.csv",
+            "dataset_type": "caste",
+            "protected_attr": "caste",
+            "label": "loan_approved",
+        },
+        "📍 Regional Hiring Bias (Tier-2/3 Cities)": {
+            "path": "data/demo_regional.csv",
+            "dataset_type": "region",
+            "protected_attr": "location",
+            "label": "hired",
+        },
+        "🗣️ Language Bias (Hinglish/Vernacular)": {
+            "path": "data/demo_language.csv",
+            "dataset_type": "language",
+            "protected_attr": "language",
+            "label": "selected",
+        },
+        "⚖️ Global Gender Income Gap": {
+            "path": "data/demo_adult.csv",
+            "dataset_type": "adult",
+            "protected_attr": "gender",
+            "label": "income_50k",
+        },
     }
 
     selection = st.sidebar.selectbox("Choose a pre-loaded dataset:", list(demo_options.keys()))
 
     if selection != "None":
-        df = pd.read_csv(demo_options[selection])
+        metadata = demo_options[selection]
+        df = pd.read_csv(metadata["path"])
+        state.dataset = df
+        state.dataset_type = metadata["dataset_type"]
+        state.protected_attr = metadata["protected_attr"]
+        state.label = metadata["label"]
         st.sidebar.success(f"Loaded: {selection}")
+        st.sidebar.write("Columns:", list(state.dataset.columns))
+    else:
+        state.dataset = None
+        state.dataset_type = ""
+        state.protected_attr = ""
+        state.label = ""
 
     mitigation_enabled = st.sidebar.checkbox("Enable Fairness Mitigation")
 
@@ -218,27 +253,28 @@ def main() -> None:
             state.dataset = bias_engine.load_demo_dataset("gender")
             state.dataset_type = "gender"
             state.protected_attr = "gender"
-            state.label = "income"
+            state.label = "income_50k"
     with col2:
         if st.button("Load Caste Bias Demo (IndiCASA)"):
             state.dataset = bias_engine.load_demo_dataset("caste")
             state.dataset_type = "caste"
-            state.protected_attr = "caste_binary"
-            state.label = "income"
+            state.protected_attr = "caste"
+            state.label = "loan_approved"
     with col3:
         if st.button("Load Language Bias Demo"):
             state.dataset = bias_engine.load_demo_dataset("language")
             state.dataset_type = "language"
-            state.protected_attr = "language_binary"
-            state.label = "admit"
+            state.protected_attr = "language"
+            state.label = "selected"
     with col4:
         if st.button("Load Regional Bias Demo"):
             state.dataset = bias_engine.load_demo_dataset("region")
             state.dataset_type = "region"
-            state.protected_attr = "region_binary"
-            state.label = "loan_approved"
+            state.protected_attr = "location"
+            state.label = "hired"
 
     if state.dataset is not None:
+        st.write("Loaded columns:", list(state.dataset.columns))
         # Compute fairness scores
         di = bias_engine.calculate_disparate_impact(state.dataset, state.protected_attr, state.label)
         spd = bias_engine.calculate_statistical_parity_difference(state.dataset, state.protected_attr, state.label)

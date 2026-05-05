@@ -42,6 +42,17 @@ class TestApplyReweighing:
         # Check if weights are added
         assert 'instance_weights' in result.columns
 
+    def test_reweighing_with_categorical_and_multiclass_protected_attribute(self):
+        df = pd.DataFrame({
+            'location': ['Mumbai', 'Bangalore', 'Rural Bihar', 'Mumbai', 'Bangalore'],
+            'education': ['Bachelors', 'Masters', 'High-school', 'Bachelors', 'Masters'],
+            'hired': [1, 1, 0, 1, 0]
+        })
+        result = apply_reweighing(df, 'location', 'hired')
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) == len(df)
+        assert 'instance_weights' in result.columns
+
 class TestApplyThresholdOptimization:
     def test_threshold_optimization(self):
         # Create sample data

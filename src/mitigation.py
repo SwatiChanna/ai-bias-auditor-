@@ -5,6 +5,7 @@ from aif360.datasets import BinaryLabelDataset
 from aif360.metrics import BinaryLabelDatasetMetric
 from fairlearn.postprocessing import ThresholdOptimizer
 from sklearn.metrics import accuracy_score, confusion_matrix
+from src.bias_engine import _binary_labels
 
 def recommend_mitigation(bias_type, metric_name, score, data_info):
     """
@@ -50,6 +51,36 @@ def recommend_mitigation(bias_type, metric_name, score, data_info):
         'output_level': 'Post-processing debiasing'
     })
 
+def _prepare_reweighing_dataset(df: pd.DataFrame, protected_attr: str, label: str) -> pd.DataFrame:
+    if protected_attr not in df.columns:
+        raise ValueError(f"Protected attribute '{protected_attr}' is missing from data.")
+    if label not in df.columns:
+        raise ValueError(f"Label column '{label}' is missing from data.")
+
+    dataset = df.copy()
+    dataset[label] = _binary_labels(dataset[label])
+
+    protected_series = dataset[protected_attr].copy()
+    if protected_series.nunique(dropna=True) > 2:
+        most_frequent = protected_series.value_counts(dropna=True).idxmax()
+        dataset[protected_attr] = np.where(protected_series == most_frequent, 1, 0)
+    else:
+        unique_values = list(pd.unique(protected_series.dropna()))
+        if len(unique_values) == 2:
+            if set(unique_values) <= {0, 1}:
+                dataset[protected_attr] = protected_series.astype(int)
+            else:
+                mapping = {unique_values[0]: 0, unique_values[1]: 1}
+                dataset[protected_attr] = protected_series.map(mapping).astype(int)
+        else:
+            dataset[protected_attr] = np.where(protected_series == unique_values[0], 0, 1)
+
+    feature_columns = [col for col in dataset.columns if col not in {label, protected_attr}]
+    encoded_features = pd.get_dummies(dataset[feature_columns], drop_first=True)
+    dataset = pd.concat([encoded_features, dataset[[protected_attr, label]]], axis=1)
+    return dataset
+
+
 def apply_reweighing(df, protected_attr, label):
     """
     Apply AIF360 Reweighing pre-processing to mitigate bias.
@@ -69,32 +100,28 @@ def apply_reweighing(df, protected_attr, label):
     >>> apply_reweighing(df, 'gender', 'income')
     # Returns reweighted DataFrame with fairness scores printed
     """
-    # Convert to AIF360 BinaryLabelDataset
+    encoded_df = _prepare_reweighing_dataset(df, protected_attr, label)
+
     dataset = BinaryLabelDataset(
-        df=df,
+        df=encoded_df,
         label_names=[label],
         protected_attribute_names=[protected_attr]
     )
 
-    # Compute original fairness scores
     privileged_groups = [{protected_attr: 1}]
     unprivileged_groups = [{protected_attr: 0}]
     original_metric = BinaryLabelDatasetMetric(dataset, privileged_groups, unprivileged_groups)
     print("Original Disparate Impact:", original_metric.disparate_impact())
     print("Original Statistical Parity Difference:", original_metric.statistical_parity_difference())
 
-    # Apply Reweighing
     reweighing = Reweighing(privileged_groups, unprivileged_groups)
     reweighed_dataset = reweighing.fit_transform(dataset)
 
-    # Compute new fairness scores
     reweighed_metric = BinaryLabelDatasetMetric(reweighed_dataset, privileged_groups, unprivileged_groups)
     print("Reweighted Disparate Impact:", reweighed_metric.disparate_impact())
     print("Reweighted Statistical Parity Difference:", reweighed_metric.statistical_parity_difference())
 
-    # Convert back to DataFrame
     reweighted_df = reweighed_dataset.convert_to_dataframe()[0]
-    # Add instance weights to the DataFrame
     reweighted_df['instance_weights'] = reweighed_dataset.instance_weights
 
     return reweighted_df

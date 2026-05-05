@@ -46,18 +46,36 @@ def _binary_labels(series: pd.Series) -> pd.Series:
 
 
 def _validate_binary_protected_attr(df: pd.DataFrame, protected_attr: str) -> tuple[Any, Any]:
-    """Validate the protected attribute is binary and return ordered values."""
+    """Validate the protected attribute and return two binary group values.
+
+    For binary protected attributes, the two distinct values are returned.
+    For multiclass protected attributes, the most frequent value is treated as the
+    privileged group and all other values are grouped into the unprivileged group.
+    """
     if protected_attr not in df.columns:
         raise ValueError(f"Protected attribute '{protected_attr}' is missing from data.")
 
     distinct_values = df[protected_attr].dropna().unique()
-    if len(distinct_values) != 2:
+    if len(distinct_values) == 0:
         raise ValueError(
-            "Protected attribute must have exactly two distinct groups for binary fairness metrics."
+            f"Protected attribute '{protected_attr}' contains no valid values."
         )
 
-    ordered_values = sorted(distinct_values, key=lambda value: str(value))
-    return ordered_values[0], ordered_values[1]
+    if len(distinct_values) == 1:
+        raise ValueError(
+            "Protected attribute must contain at least two distinct groups for fairness metrics."
+        )
+
+    if len(distinct_values) == 2:
+        ordered_values = sorted(distinct_values, key=lambda value: str(value))
+        return ordered_values[0], ordered_values[1]
+
+    value_counts = df[protected_attr].value_counts(dropna=True)
+    privileged_value = value_counts.idxmax()
+    unprivileged_values = tuple(
+        value for value in value_counts.index if value != privileged_value
+    )
+    return unprivileged_values, privileged_value
 
 
 def _positive_rate(df: pd.DataFrame, protected_attr: str, label: str, group_value: Any) -> float:
@@ -65,7 +83,11 @@ def _positive_rate(df: pd.DataFrame, protected_attr: str, label: str, group_valu
     if label not in df.columns:
         raise ValueError(f"Label column '{label}' is missing from data.")
 
-    group_df = df[df[protected_attr] == group_value]
+    if isinstance(group_value, (list, tuple, set, np.ndarray, pd.Index)):
+        group_df = df[df[protected_attr].isin(group_value)]
+    else:
+        group_df = df[df[protected_attr] == group_value]
+
     if group_df.empty:
         raise ValueError(
             f"No records found for protected group value '{group_value}'."
@@ -196,7 +218,7 @@ def load_demo_dataset(dataset_type: str) -> pd.DataFrame:
     dataset_map = {
         "gender": "demo_adult.csv",
         "caste": "demo_indicasa.csv",
-        "language": "demo_regional.csv",
+        "language": "demo_language.csv",
         "region": "demo_regional.csv",
     }
 
