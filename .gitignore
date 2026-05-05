@@ -1,0 +1,18 @@
+# Environments
+.venv/
+env/
+venv/
+libs/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Data and Models (Keep these local for now if they are huge)
+victim_model.pkl
+*.csv
+
+# Sensitive info
+.env
