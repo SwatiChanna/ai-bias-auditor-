@@ -8,8 +8,13 @@ metrics, counterfactual testing, explanations, and mitigation recommendations.
 from __future__ import annotations
 
 from fpdf import FPDF
+import pandas as pd
+import plotly.express as px
+import streamlit as st
+from streamlit import session_state as state
 
 from src import bias_engine
+from src.counterfactual_templates import CounterfactualGenerator
 
 
 def _get_traffic_light_color(score: float, metric: str) -> str:
@@ -235,9 +240,18 @@ def main() -> None:
         st.header("🔄 Counterfactual Testing")
         dimension = st.selectbox("Vary Dimension:", ["Gender", "Caste", "Language", "Region"])
         if st.button("Run Counterfactual Test"):
-            counterfactual_df = _run_counterfactual(state.dataset, dimension.lower())
-            cf_di = bias_engine.calculate_disparate_impact(counterfactual_df, state.protected_attr, state.label)
-            cf_spd = bias_engine.calculate_statistical_parity_difference(counterfactual_df, state.protected_attr, state.label)
+            generator = CounterfactualGenerator()
+            if dimension == "Gender":
+                cf_df = generator.generate_gender_counterfactual(state.dataset)
+            elif dimension == "Caste":
+                cf_df = generator.generate_caste_counterfactual(state.dataset)
+            elif dimension == "Language":
+                cf_df = generator.generate_language_counterfactual(state.dataset)
+            else:
+                cf_df = generator.generate_region_counterfactual(state.dataset)
+
+            cf_preds = bias_engine.run_model(cf_df, state.label)
+            cf_di = bias_engine.calculate_disparate_impact(cf_df, state.protected_attr, state.label)
             st.subheader("Before vs After")
             col1, col2 = st.columns(2)
             with col1:
@@ -247,9 +261,9 @@ def main() -> None:
             with col2:
                 st.write("Counterfactual Scores")
                 st.metric("DI", f"{cf_di:.2f}", delta=f"{(cf_di - di):.2f}")
-                st.metric("SPD", f"{cf_spd:.2f}", delta=f"{(cf_spd - spd):.2f}")
-                if abs(cf_di - di) > 0.1 or abs(cf_spd - spd) > 0.1:
-                    st.warning("⚠️ Bias sensitivity confirmed: scores changed >10%")
+                if abs(cf_di - di) > 0.1:
+                    st.warning("⚠️ High Sensitivity to Demographic Features")
+            st.write("Counterfactual predictions generated", len(cf_preds), "rows")
 
         # Bias Explanation Section
         st.header("💡 Bias Explanation")

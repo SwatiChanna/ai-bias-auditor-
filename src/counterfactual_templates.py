@@ -1,6 +1,45 @@
 import re
 import pandas as pd
 
+class CounterfactualGenerator:
+    """Generator for counterfactual datasets across fairness dimensions."""
+
+    def generate_gender_counterfactual(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Generate gender counterfactual by flipping binary gender labels."""
+        if "gender" in df.columns:
+            result = df.copy()
+            result["gender"] = result["gender"].map({0: 1, 1: 0})
+            return result
+        return df.copy()
+
+    def generate_caste_counterfactual(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Generate caste counterfactual by swapping binary caste labels or caste terms."""
+        result = df.copy()
+        if "caste_binary" in result.columns:
+            result["caste_binary"] = result["caste_binary"].map({0: 1, 1: 0})
+        elif "caste" in result.columns:
+            result = generate_caste_counterfactual(result, sensitive_column="caste")
+        return result
+
+    def generate_language_counterfactual(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Generate language counterfactual by swapping language indicators."""
+        result = df.copy()
+        if "language_binary" in result.columns:
+            result["language_binary"] = result["language_binary"].map({0: 1, 1: 0})
+        if "utterance" in result.columns:
+            result["utterance"] = result["utterance"].apply(lambda txt: generate_language_counterfactual(txt, target_lang="hi"))
+        return result
+
+    def generate_region_counterfactual(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Generate region counterfactual by swapping region labels or text."""
+        result = df.copy()
+        if "region_binary" in result.columns:
+            result["region_binary"] = result["region_binary"].map({0: 1, 1: 0})
+        if "region" in result.columns:
+            result = generate_region_counterfactual(result)
+        return result
+
+
 def generate_gender_counterfactual(text_or_df, sensitive_column='gender'):
     """
     Generate gender counterfactual by swapping gender-specific terms or flipping binary gender labels.
