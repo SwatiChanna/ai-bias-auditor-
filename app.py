@@ -185,6 +185,21 @@ def main() -> None:
     # Title
     st.title("🔍 AI Bias & Fairness Auditor (India-Aware)")
 
+    st.sidebar.header("📁 Step 1: Select Case Study")
+    demo_options = {
+        "None": None,
+        "🏦 Indian Loan Audit (Caste/Caste-Sensitive)": "data/demo_indicasa.csv",
+        "📍 Regional Hiring Bias (Tier-2/3 Cities)": "data/demo_regional.csv",
+        "🗣️ Language Bias (Hinglish/Vernacular)": "data/demo_language.csv",
+        "⚖️ Global Gender Income Gap": "data/demo_adult.csv"
+    }
+
+    selection = st.sidebar.selectbox("Choose a pre-loaded dataset:", list(demo_options.keys()))
+
+    if selection != "None":
+        df = pd.read_csv(demo_options[selection])
+        st.sidebar.success(f"Loaded: {selection}")
+
     mitigation_enabled = st.sidebar.checkbox("Enable Fairness Mitigation")
 
     # Initialize session state
