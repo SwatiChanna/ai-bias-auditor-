@@ -218,18 +218,22 @@ def _create_report(scores: Dict[str, float], explanation: str, recommendations: 
     spd_text = f"Statistical Parity Difference: {scores['statistical_parity']:.3f}"
     pdf.multi_cell(0, 6, txt=_sanitize_pdf_text(f"{di_text}\n{spd_text}"))
     
+    available_width = pdf.w - pdf.l_margin - pdf.r_margin
     pdf.ln(8)
     pdf.set_font("Arial", "B", size=12)
     pdf.cell(200, 10, txt=_sanitize_pdf_text("Mitigation Recommendations"), ln=True)
     pdf.set_font("Arial", size=10)
     for i, rec in enumerate(recommendations, 1):
-        pdf.multi_cell(0, 6, txt=_sanitize_pdf_text(f"{i}. {rec}"))
-    
+        pdf.multi_cell(available_width, 6, txt=_sanitize_pdf_text(f"{i}. {rec}"))
+
     pdf.ln(10)
     pdf.set_font("Arial", "I", size=8)
-    pdf.cell(200, 5, txt=_sanitize_pdf_text("This report audits AI fairness across protected dimensions."), ln=True)
-    
-    return pdf.output(dest="S").encode("latin-1", errors="replace")
+    pdf.cell(available_width, 5, txt=_sanitize_pdf_text("This report audits AI fairness across protected dimensions."), ln=True)
+
+    pdf_content = pdf.output(dest="S")
+    if isinstance(pdf_content, bytearray):
+        return bytes(pdf_content)
+    return pdf_content.encode("latin-1", errors="replace")
 
 
 def main() -> None:
