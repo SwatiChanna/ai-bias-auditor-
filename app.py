@@ -12,8 +12,10 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from streamlit import session_state as state
+from typing import Any, Dict, List
 
 from src import bias_engine
+from src import mitigation
 from src.counterfactual_templates import CounterfactualGenerator
 
 
@@ -183,6 +185,8 @@ def main() -> None:
     # Title
     st.title("🔍 AI Bias & Fairness Auditor (India-Aware)")
 
+    mitigation_enabled = st.sidebar.checkbox("Enable Fairness Mitigation")
+
     # Initialize session state
     if "dataset" not in state:
         state.dataset = None
@@ -236,6 +240,23 @@ def main() -> None:
             st.metric("Statistical Parity Difference", f"{spd:.2f}", delta_color=color)
         st.plotly_chart(_create_fairness_chart(state.scores), use_container_width=True)
 
+        mitigated_scores = None
+        if mitigation_enabled:
+            mitigated_df = mitigation.apply_reweighing(state.dataset, state.protected_attr, state.label)
+            m_di = bias_engine.calculate_disparate_impact(mitigated_df, state.protected_attr, state.label)
+            m_spd = bias_engine.calculate_statistical_parity_difference(mitigated_df, state.protected_attr, state.label)
+            mitigated_scores = {"disparate_impact": m_di, "statistical_parity": m_spd}
+            st.subheader("🧩 Mitigation Comparison")
+            orig_col, mitigated_col = st.columns(2)
+            with orig_col:
+                st.write("Original Scores")
+                st.metric("Disparate Impact", f"{di:.2f}")
+                st.metric("Statistical Parity Difference", f"{spd:.2f}")
+            with mitigated_col:
+                st.write("Mitigated Scores")
+                st.metric("Disparate Impact", f"{m_di:.2f}")
+                st.metric("Statistical Parity Difference", f"{m_spd:.2f}")
+
         # Counterfactual Testing Section
         st.header("🔄 Counterfactual Testing")
         dimension = st.selectbox("Vary Dimension:", ["Gender", "Caste", "Language", "Region"])
@@ -277,6 +298,10 @@ def main() -> None:
             st.write(f"- {rec}")
 
         # Export Section
+        if mitigation_enabled:
+            mitigation_info = mitigation.get_india_specific_recommendations(state.dataset_type)
+            st.info(mitigation_info)
+
         st.header("📄 Export Report")
         report = _create_report(state.scores, explanation, recommendations)
         st.download_button(
