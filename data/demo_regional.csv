@@ -1,0 +1,42 @@
+location,education,work_experience,hired
+Mumbai,Bachelors,5,1
+Bangalore,Masters,7,1
+Mumbai,HS-grad,3,1
+Rural Bihar,High-school,10,0
+Bangalore,Bachelors,6,1
+Rural Bihar,Some-college,4,0
+Mumbai,Masters,8,1
+Rural Bihar,Bachelors,2,0
+Bangalore,HS-grad,5,1
+Rural Bihar,Some-college,7,0
+Mumbai,Bachelors,9,1
+Bangalore,Masters,3,1
+Rural Bihar,High-school,6,0
+Mumbai,Some-college,2,1
+Bangalore,Bachelors,4,1
+Rural Bihar,Masters,5,0
+Mumbai,HS-grad,1,1
+Bangalore,Some-college,8,1
+Rural Bihar,Bachelors,11,0
+Mumbai,Bachelors,7,1
+Bangalore,High-school,2,1
+Rural Bihar,Some-college,3,0
+Mumbai,Masters,10,1
+Bangalore,HS-grad,4,1
+Rural Bihar,Bachelors,6,0
+Mumbai,Some-college,5,1
+Bangalore,Bachelors,9,1
+Rural Bihar,High-school,1,0
+Mumbai,Masters,12,1
+Bangalore,Some-college,7,1
+Rural Bihar,Bachelors,8,0
+Mumbai,High-school,3,1
+Bangalore,Masters,6,1
+Rural Bihar,Some-college,9,0
+Mumbai,Bachelors,4,1
+Bangalore,HS-grad,10,1
+Rural Bihar,Bachelors,5,0
+Mumbai,Masters,2,1
+Bangalore,Some-college,3,1
+Rural Bihar,High-school,7,0
+Mumbai,Bachelors,5,1
