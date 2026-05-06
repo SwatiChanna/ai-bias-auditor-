@@ -1,0 +1,32 @@
+text,caste,loan_approved
+"Brahmin graduate from IIT Delhi applied for loan",1,1
+"Dalit graduate from state college applied for loan",0,0
+"Upper caste woman with MBA from Mumbai applied for a home loan",1,1
+"OBC student from rural Bihar applied for education loan",0,0
+"Brahmin engineer from Bangalore applied for loan",1,1
+"Dalit activist from UP applied for loan",0,0
+"Bc road worker from state university applied for loan",0,0
+"Upper caste businessman from Chennai applied for loan",1,1
+"Dalit graduate from state college applied for loan with code-mixed text",0,0
+"Brahmin student from IIT Bombay applied for loan",1,1
+"Upper caste doctor from Delhi applied for loan",1,1
+"Dalit nurse from rural Maharashtra applied for loan",0,0
+"Brahmin manager from Hyderabad applied for loan",1,1
+"OBC woman from Patna applied for loan",0,0
+"Upper caste student from NIT Trichy applied for education loan",1,1
+"Dalit farmer from Jharkhand applied for loan",0,0
+"Brahmin researcher from ISI Kolkata applied for loan",1,1
+"OBC youth from Telangana applied for loan",0,0
+"Upper caste developer from Pune applied for loan",1,1
+"Dalit graduate from state college got rejected for loan",0,0
+"Brahmin woman from a metro city applied for loan",1,1
+"Dalit male from rural Odisha applied for loan",0,0
+"Upper caste student from Bangalore applied for loan",1,1
+"OBC graduate from state college applied for loan",0,0
+"Brahmin employee from Delhi applied for loan",1,1
+"Dalit service worker from Maharashtra applied for loan",0,0
+"Upper caste student from IIT Madras applied for loan",1,1
+"Dalit entrepreneur from Bihar applied for loan",0,0
+"Brahmin student from NIT Surathkal applied for loan",1,1
+"OBC scholar from Kolkata applied for loan",0,0
+"Upper caste consultant from Mumbai applied for loan",1,1
